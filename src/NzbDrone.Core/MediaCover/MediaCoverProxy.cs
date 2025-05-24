@@ -64,6 +64,10 @@ namespace NzbDrone.Core.MediaCover
             var url = GetUrl(hash);
 
             var request = new HttpRequest(url);
+
+            // Follow redirects
+            request.AllowAutoRedirect = true;
+
             var response = await _httpClient.GetAsync(request);
 
             return response.ResponseData;

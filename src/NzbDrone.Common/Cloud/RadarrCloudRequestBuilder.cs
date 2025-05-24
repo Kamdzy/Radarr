@@ -16,11 +16,11 @@ namespace NzbDrone.Common.Cloud
             Services = new HttpRequestBuilder("https://radarr.servarr.com/v1/")
                 .CreateFactory();
 
-            TMDB = new HttpRequestBuilder("https://api.themoviedb.org/{api}/{route}/{id}{secondaryRoute}")
+            TMDB = new HttpRequestBuilder("http://192.168.178.102:2070/v1/tmdb/{api}/{route}/{id}{secondaryRoute}")
                 .SetHeader("Authorization", $"Bearer {AuthToken}")
                 .CreateFactory();
 
-            RadarrMetadata = new HttpRequestBuilder("https://api.radarr.video/v1/{route}")
+            RadarrMetadata = new HttpRequestBuilder("http://192.168.178.102:2070/v1/metadata/{route}")
                 .CreateFactory();
         }
 
