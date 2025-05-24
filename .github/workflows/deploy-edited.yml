@@ -35,6 +35,9 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
 
+      - name: Set executable permissions for package.sh
+        run: chmod +x ./.github/actions/package-edited/package.sh
+
       - name: Package
         uses: ./.github/actions/package-edited
         with:
