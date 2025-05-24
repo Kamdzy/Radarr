@@ -114,14 +114,25 @@ namespace NzbDrone.Core.DecisionEngine
 
                         if (parsedMovieInfo.PrimaryMovieTitle.IsNullOrWhiteSpace())
                         {
-                            var remoteMovie = new RemoteMovie
-                            {
-                                Release = report,
-                                ParsedMovieInfo = parsedMovieInfo,
-                                Languages = parsedMovieInfo.Languages
-                            };
+                            // Mechanism to 'parse' unparsed reports
 
-                            decision = new DownloadDecision(remoteMovie, new DownloadRejection(DownloadRejectionReason.UnableToParse, "Unable to parse release"));
+                            if (parsedMovieInfo.SimpleReleaseTitle.IsNullOrWhiteSpace())
+                            {
+                                parsedMovieInfo.SimpleReleaseTitle = report.Title;
+                            }
+
+                            var remoteMovie = _parsingService.Map(parsedMovieInfo, report.ImdbId.ToString(), report.TmdbId, searchCriteria);
+                            remoteMovie.Release = report;
+
+                            remoteMovie.ParsedMovieInfo = parsedMovieInfo;
+                            remoteMovie.DownloadAllowed = true;
+
+                            remoteMovie.CustomFormats = _formatCalculator.ParseCustomFormat(remoteMovie, remoteMovie.Release.Size);
+                            remoteMovie.CustomFormatScore = remoteMovie?.Movie?.QualityProfile?.CalculateCustomFormatScore(remoteMovie.CustomFormats) ?? 0;
+
+                            _logger.Trace("Custom Format Score of '{0}' [{1}] calculated for '{2}'", remoteMovie.CustomFormatScore, remoteMovie.CustomFormats?.ConcatToString(), report.Title);
+
+                            decision = new DownloadDecision(remoteMovie);
                         }
                     }
                 }

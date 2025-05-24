@@ -124,6 +124,12 @@ namespace NzbDrone.Core.IndexerSearch
                 _movieService.UpdateLastSearchTime(criteriaBase.Movie);
             }
 
+            // Add TmdbId to all reports -- needed to 'parse' the movie
+            foreach (var report in reports)
+            {
+                report.TmdbId = criteriaBase.Movie.TmdbId;
+            }
+
             return _makeDownloadDecision.GetSearchDecision(reports, criteriaBase).ToList();
         }
 
