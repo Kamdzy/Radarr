@@ -125,7 +125,7 @@ namespace NzbDrone.Core.DecisionEngine
                             remoteMovie.Release = report;
 
                             remoteMovie.ParsedMovieInfo = parsedMovieInfo;
-                            remoteMovie.DownloadAllowed = true;
+                            remoteMovie.DownloadAllowed = false; // Prevent auto-downloading wrong files
 
                             remoteMovie.CustomFormats = _formatCalculator.ParseCustomFormat(remoteMovie, remoteMovie.Release.Size);
                             remoteMovie.CustomFormatScore = remoteMovie?.Movie?.QualityProfile?.CalculateCustomFormatScore(remoteMovie.CustomFormats) ?? 0;
