@@ -125,14 +125,22 @@ namespace NzbDrone.Core.DecisionEngine
                             remoteMovie.Release = report;
 
                             remoteMovie.ParsedMovieInfo = parsedMovieInfo;
-                            remoteMovie.DownloadAllowed = false; // Prevent auto-downloading wrong files
+                            remoteMovie.DownloadAllowed = false;
 
                             remoteMovie.CustomFormats = _formatCalculator.ParseCustomFormat(remoteMovie, remoteMovie.Release.Size);
                             remoteMovie.CustomFormatScore = remoteMovie?.Movie?.QualityProfile?.CalculateCustomFormatScore(remoteMovie.CustomFormats) ?? 0;
 
                             _logger.Trace("Custom Format Score of '{0}' [{1}] calculated for '{2}'", remoteMovie.CustomFormatScore, remoteMovie.CustomFormats?.ConcatToString(), report.Title);
 
-                            decision = new DownloadDecision(remoteMovie);
+                            if (searchCriteria.SceneTitles.Any(title => report.Title.ContainsIgnoreCase(title) || report.Title.ContainsIgnoreCase(title.Replace("-", ""))))
+                            {
+                                remoteMovie.DownloadAllowed = true;
+                                decision = new DownloadDecision(remoteMovie);
+                            }
+                            else
+                            {
+                                decision = new DownloadDecision(remoteMovie, new DownloadRejection(DownloadRejectionReason.UnableToParse, "Unable to parse release"));
+                            }
                         }
                     }
                 }
