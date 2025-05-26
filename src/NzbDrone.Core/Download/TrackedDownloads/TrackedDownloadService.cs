@@ -127,6 +127,24 @@ namespace NzbDrone.Core.Download.TrackedDownloads
                 {
                     trackedDownload.RemoteMovie = _parsingService.Map(parsedMovieInfo, "", 0, null);
                 }
+                else
+                {
+                    // Fallback: find movie using title only to allow for automatic import
+                    var result = _parsingService.GetMovie(trackedDownload.DownloadItem.Title);
+
+                    if (result != null)
+                    {
+                        trackedDownload.RemoteMovie = new RemoteMovie()
+                        {
+                            ParsedMovieInfo = new ParsedMovieInfo()
+                            {
+                                MovieTitles = new List<string> { result.Title },
+                                TmdbId = result.TmdbId,
+                            },
+                            Movie = result
+                        };
+                    }
+                }
 
                 var downloadHistory = _downloadHistoryService.GetLatestDownloadHistoryItem(downloadItem.DownloadId);
 
