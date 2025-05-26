@@ -127,9 +127,11 @@ namespace NzbDrone.Core.Movies
         {
             var cleanTitles = titles.Select(t => t.CleanMovieTitle().ToLowerInvariant());
 
-            var result = candidates.Where(x => cleanTitles.Contains(x.MovieMetadata.Value.CleanTitle) || cleanTitles.Contains(x.MovieMetadata.Value.CleanOriginalTitle))
-                .AllWithYear(year)
-                .ToList();
+            // Enable partial matching
+            var result = candidates.Where(x =>
+                cleanTitles.Any(t => t.Contains(x.MovieMetadata.Value.CleanTitle)) ||
+                cleanTitles.Any(t => t.Contains(x.MovieMetadata.Value.CleanOriginalTitle)))
+               .ToList();
 
             if (result == null || result.Count == 0)
             {

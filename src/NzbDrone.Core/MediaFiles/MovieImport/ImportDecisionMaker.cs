@@ -9,6 +9,7 @@ using NzbDrone.Core.Download;
 using NzbDrone.Core.Download.TrackedDownloads;
 using NzbDrone.Core.MediaFiles.MovieImport.Aggregation;
 using NzbDrone.Core.Movies;
+using NzbDrone.Core.Parser;
 using NzbDrone.Core.Parser.Model;
 
 namespace NzbDrone.Core.MediaFiles.MovieImport
@@ -31,6 +32,7 @@ namespace NzbDrone.Core.MediaFiles.MovieImport
         private readonly IDetectSample _detectSample;
         private readonly ITrackedDownloadService _trackedDownloadService;
         private readonly ICustomFormatCalculationService _formatCalculator;
+        private readonly IParsingService _parsingService;
         private readonly Logger _logger;
 
         public ImportDecisionMaker(IEnumerable<IImportDecisionEngineSpecification> specifications,
@@ -40,6 +42,7 @@ namespace NzbDrone.Core.MediaFiles.MovieImport
                                    IDetectSample detectSample,
                                    ITrackedDownloadService trackedDownloadService,
                                    ICustomFormatCalculationService formatCalculator,
+                                   IParsingService parsingService,
                                    Logger logger)
         {
             _specifications = specifications;
@@ -49,6 +52,7 @@ namespace NzbDrone.Core.MediaFiles.MovieImport
             _detectSample = detectSample;
             _trackedDownloadService = trackedDownloadService;
             _formatCalculator = formatCalculator;
+            _parsingService = parsingService;
             _logger = logger;
         }
 
@@ -118,7 +122,23 @@ namespace NzbDrone.Core.MediaFiles.MovieImport
 
             try
             {
-                var fileMovieInfo = Parser.Parser.ParseMoviePath(localMovie.Path);
+                // Use filename alone to prevent folder name match on all files
+                var fileName = System.IO.Path.GetFileName(localMovie.Path);
+                var fileMovieInfo = Parser.Parser.ParseMoviePath(fileName);
+
+                if (fileMovieInfo == null)
+                {
+                    var result = _parsingService.GetMovie(fileName);
+
+                    if (result != null)
+                    {
+                        fileMovieInfo = new ParsedMovieInfo()
+                        {
+                            MovieTitles = new List<string>() { result.Title },
+                            TmdbId = result.TmdbId
+                        };
+                    }
+                }
 
                 localMovie.FileMovieInfo = fileMovieInfo;
                 localMovie.Size = _diskProvider.GetFileSize(localMovie.Path);

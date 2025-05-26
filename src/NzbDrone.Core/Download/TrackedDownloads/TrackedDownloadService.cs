@@ -14,6 +14,7 @@ using NzbDrone.Core.Movies;
 using NzbDrone.Core.Movies.Events;
 using NzbDrone.Core.Parser;
 using NzbDrone.Core.Parser.Model;
+using NzbDrone.Core.Qualities;
 
 namespace NzbDrone.Core.Download.TrackedDownloads
 {
@@ -140,6 +141,8 @@ namespace NzbDrone.Core.Download.TrackedDownloads
                             {
                                 MovieTitles = new List<string> { result.Title },
                                 TmdbId = result.TmdbId,
+                                SimpleReleaseTitle = result.Title,
+                                Quality = new QualityModel { Quality = Quality.Unknown },
                             },
                             Movie = result
                         };

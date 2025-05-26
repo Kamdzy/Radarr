@@ -153,14 +153,18 @@ namespace NzbDrone.Core.Movies
             var builder = new SqlBuilder(_database.DatabaseType)
                 .Join<Movie, QualityProfile>((m, p) => m.QualityProfileId == p.Id)
                 .Join<Movie, MovieMetadata>((m, p) => m.MovieMetadataId == p.Id)
-                .LeftJoin<Movie, MovieFile>((m, f) => m.Id == f.MovieId)
-                .Where<MovieMetadata>(x => titles.Contains(x.CleanTitle) || titles.Contains(x.CleanOriginalTitle));
-
+                .LeftJoin<Movie, MovieFile>((m, f) => m.Id == f.MovieId);
             _ = _database.QueryJoined<Movie, MovieMetadata, QualityProfile, MovieFile>(
                 builder,
                 (movie, metadata, qualityProfile, file) => Map(movieDictionary, movie, metadata, qualityProfile, file));
 
-            return movieDictionary.Values.ToList();
+            // Enable for partial matching
+            var filteredDictionary = movieDictionary
+                .Where(x => titles.Any(t => t.Contains(x.Value.MovieMetadata.Value.CleanTitle)) ||
+                            titles.Any(t => t.Contains(x.Value.MovieMetadata.Value.CleanOriginalTitle)))
+                .ToDictionary(x => x.Key, x => x.Value);
+
+            return filteredDictionary.Values.ToList();
         }
 
         private List<Movie> FindByAltTitles(List<string> titles)
