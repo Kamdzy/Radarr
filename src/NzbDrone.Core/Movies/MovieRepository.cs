@@ -160,8 +160,9 @@ namespace NzbDrone.Core.Movies
 
             // Enable for partial matching
             var filteredDictionary = movieDictionary
-                .Where(x => titles.Any(t => t.Contains(x.Value.MovieMetadata.Value.CleanTitle)) ||
-                            titles.Any(t => t.Contains(x.Value.MovieMetadata.Value.CleanOriginalTitle)))
+                .Where(x =>
+                    (x.Value.MovieMetadata.Value.CleanTitle != null && titles.Any(t => t != null && t.Contains(x.Value.MovieMetadata.Value.CleanTitle))) ||
+                    (x.Value.MovieMetadata.Value.CleanOriginalTitle != null && titles.Any(t => t != null && t.Contains(x.Value.MovieMetadata.Value.CleanOriginalTitle))))
                 .ToDictionary(x => x.Key, x => x.Value);
 
             return filteredDictionary.Values.ToList();
