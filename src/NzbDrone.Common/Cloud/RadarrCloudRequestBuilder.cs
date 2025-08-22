@@ -19,11 +19,11 @@ namespace NzbDrone.Common.Cloud
 
             TMDB = new HttpRequestBuilder("http://192.168.178.102:2070/v1/tmdb/{api}/{route}/{id}{secondaryRoute}")
                 .SetHeader("Authorization", $"Bearer {AuthToken}")
-                .SetTimeout(TimeSpan.FromMinutes(10))
+                .SetTimeout(TimeSpan.FromMinutes(30))
                 .CreateFactory();
 
             RadarrMetadata = new HttpRequestBuilder("http://192.168.178.102:2070/v1/metadata/{route}")
-                .SetTimeout(TimeSpan.FromMinutes(10))
+                .SetTimeout(TimeSpan.FromMinutes(30))
                 .CreateFactory();
         }
 
