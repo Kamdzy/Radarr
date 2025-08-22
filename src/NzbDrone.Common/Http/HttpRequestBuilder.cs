@@ -31,6 +31,13 @@ namespace NzbDrone.Common.Http
         public Dictionary<string, string> Cookies { get; private set; }
         public List<HttpFormData> FormData { get; private set; }
         public Action<HttpRequest> PostProcess { get; set; }
+        public TimeSpan? Timeout { get; private set; }
+
+        public HttpRequestBuilder SetTimeout(TimeSpan timeout)
+        {
+            Timeout = timeout;
+            return this;
+        }
 
         public HttpRequestBuilder(string baseUrl)
         {
@@ -111,6 +118,11 @@ namespace NzbDrone.Common.Http
             request.RateLimit = RateLimit;
             request.LogResponseContent = LogResponseContent;
             request.Credentials = NetworkCredential;
+
+            if (Timeout.HasValue)
+            {
+                request.RequestTimeout = Timeout.Value;
+            }
 
             foreach (var header in Headers)
             {
