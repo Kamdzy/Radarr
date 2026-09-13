@@ -29,6 +29,20 @@ namespace NzbDrone.Core.Test.MediaFiles.movieImport.Aggregation.Aggregators
             subtitleTitleInfo.Copy.Should().Be(0);
         }
 
+        // A movie with no imported file has a null MovieFile. Dereferencing it
+        // here used to throw NullReferenceException, which AggregationService's
+        // blanket per-augmenter catch swallowed -- leaving SubtitleInfo unset for
+        // ExistingSubtitleImporter to crash on instead.
+        [TestCase("Name (2020) - [AAC 2.0].eng.ass", null)]
+        [TestCase("Name (2020) - [AAC 2.0].eng.ass", "Name (2020)/Name (2020) - [FLAC 2.0].mkv")]
+        public void should_not_throw_when_movie_has_no_file(string path, string fileNameBeforeRename)
+        {
+            var subtitleTitleInfo = Subject.CleanSubtitleTitleInfo(null, path, fileNameBeforeRename);
+
+            subtitleTitleInfo.Should().NotBeNull();
+            subtitleTitleInfo.Language.Should().NotBeNull();
+        }
+
         [TestCase("Default (2020)/Default (2020) - [AAC 2.0].mkv", "Default (2020) - [AAC 2.0].default.eng.forced.ass")]
         [TestCase("Default (2020)/Default (2020) - [AAC 2.0].mkv", "Default (2020) - [AAC 2.0].eng.default.ass")]
         [TestCase("Default (2020)/Default (2020) - [AAC 2.0].mkv", "Default (2020) - [AAC 2.0].default.eng.testtitle.forced.ass")]
