@@ -148,24 +148,87 @@ namespace NzbDrone.Core.Movies
         // SQLite makes a mess of the query plan and ends up doing a table scan
         private List<Movie> FindByMovieTitles(List<string> titles)
         {
+            // Exact match, filtered in SQL. This is index-backed and is the case
+            // that virtually every lookup takes.
+            var exact = QueryMovieTitles(titles);
+
+            if (exact.Count > 0)
+            {
+                return exact;
+            }
+
+            // Partial match fallback: the release title merely CONTAINS the movie
+            // title. Done in SQL so the database filters, rather than fetching
+            // every movie and filtering in memory.
+            //
+            // The in-memory version cost 351ms of SQL plus materialising ~54k
+            // joined objects, per call, on a 53,855-movie library. RssSync calls
+            // this once per RSS release (215 per cycle) and
+            // RefreshMonitoredDownloads once per queue item, against only 2
+            // CommandExecutor task threads -- so both threads stayed saturated,
+            // the download queue never refreshed, completed downloads were never
+            // noticed, and nothing imported.
+            return FindByMovieTitlesPartial(titles);
+        }
+
+        private List<Movie> QueryMovieTitles(List<string> titles)
+        {
             var movieDictionary = new Dictionary<int, Movie>();
 
             var builder = new SqlBuilder(_database.DatabaseType)
                 .Join<Movie, QualityProfile>((m, p) => m.QualityProfileId == p.Id)
                 .Join<Movie, MovieMetadata>((m, p) => m.MovieMetadataId == p.Id)
-                .LeftJoin<Movie, MovieFile>((m, f) => m.Id == f.MovieId);
+                .LeftJoin<Movie, MovieFile>((m, f) => m.Id == f.MovieId)
+                .Where<MovieMetadata>(x => titles.Contains(x.CleanTitle) || titles.Contains(x.CleanOriginalTitle));
+
             _ = _database.QueryJoined<Movie, MovieMetadata, QualityProfile, MovieFile>(
                 builder,
                 (movie, metadata, qualityProfile, file) => Map(movieDictionary, movie, metadata, qualityProfile, file));
 
-            // Enable for partial matching
-            var filteredDictionary = movieDictionary
-                .Where(x =>
-                    (x.Value.MovieMetadata.Value.CleanTitle != null && titles.Any(t => t != null && t.Contains(x.Value.MovieMetadata.Value.CleanTitle))) ||
-                    (x.Value.MovieMetadata.Value.CleanOriginalTitle != null && titles.Any(t => t != null && t.Contains(x.Value.MovieMetadata.Value.CleanOriginalTitle))))
-                .ToDictionary(x => x.Key, x => x.Value);
+            return movieDictionary.Values.ToList();
+        }
 
-            return filteredDictionary.Values.ToList();
+        // "release title CONTAINS movie title" evaluated in SQL. The column is the
+        // needle rather than the haystack, so it can't go through the expression
+        // Where<T>() helper; built as raw SQL with bound parameters instead.
+        // `||` and LIKE are used rather than a dialect-specific function so this
+        // works on both Postgres and SQLite (same pattern as
+        // HistoryRepository.BuildLanguageWhereClause).
+        private List<Movie> FindByMovieTitlesPartial(List<string> titles)
+        {
+            var metadata = TableMapping.Mapper.TableNameMapping(typeof(MovieMetadata));
+            var clauses = new List<string>();
+            var parameters = new DynamicParameters();
+            var index = 0;
+
+            foreach (var title in titles.Where(t => !string.IsNullOrWhiteSpace(t)))
+            {
+                var name = $"partialTitle{index++}";
+                parameters.Add(name, title);
+
+                // Empty CleanTitle would make LIKE '%%' match every row.
+                clauses.Add($"(\"{metadata}\".\"CleanTitle\" IS NOT NULL AND \"{metadata}\".\"CleanTitle\" <> '' AND @{name} LIKE '%' || \"{metadata}\".\"CleanTitle\" || '%')");
+                clauses.Add($"(\"{metadata}\".\"CleanOriginalTitle\" IS NOT NULL AND \"{metadata}\".\"CleanOriginalTitle\" <> '' AND @{name} LIKE '%' || \"{metadata}\".\"CleanOriginalTitle\" || '%')");
+            }
+
+            if (clauses.Count == 0)
+            {
+                return new List<Movie>();
+            }
+
+            var movieDictionary = new Dictionary<int, Movie>();
+
+            var builder = new SqlBuilder(_database.DatabaseType)
+                .Join<Movie, QualityProfile>((m, p) => m.QualityProfileId == p.Id)
+                .Join<Movie, MovieMetadata>((m, p) => m.MovieMetadataId == p.Id)
+                .LeftJoin<Movie, MovieFile>((m, f) => m.Id == f.MovieId)
+                .Where($"({string.Join(" OR ", clauses)})", parameters);
+
+            _ = _database.QueryJoined<Movie, MovieMetadata, QualityProfile, MovieFile>(
+                builder,
+                (movie, meta, qualityProfile, file) => Map(movieDictionary, movie, meta, qualityProfile, file));
+
+            return movieDictionary.Values.ToList();
         }
 
         private List<Movie> FindByAltTitles(List<string> titles)

@@ -125,13 +125,53 @@ namespace NzbDrone.Core.Movies
 
         public Movie FindByTitle(List<string> titles, int? year, List<string> otherTitles, List<Movie> candidates)
         {
-            var cleanTitles = titles.Select(t => t.CleanMovieTitle().ToLowerInvariant());
+            var cleanTitles = titles.Select(t => t.CleanMovieTitle().ToLowerInvariant()).ToList();
 
-            // Enable partial matching
+            // Exact match first, then partial. Partial matching alone is ambiguous
+            // whenever one title is a substring of another -- a shorter catalog
+            // number contained in a longer one, for example -- and every such case
+            // reached ReturnSingleMovieOrThrow with 2+ candidates and surfaced as
+            // "Unable to import automatically, found multiple movies", blocking the
+            // import. Trying exact first means a well-formed release never enters
+            // the ambiguous path at all.
             var result = candidates.Where(x =>
-                cleanTitles.Any(t => t.Contains(x.MovieMetadata.Value.CleanTitle)) ||
-                cleanTitles.Any(t => t.Contains(x.MovieMetadata.Value.CleanOriginalTitle)))
+                cleanTitles.Contains(x.MovieMetadata.Value.CleanTitle) ||
+                cleanTitles.Contains(x.MovieMetadata.Value.CleanOriginalTitle))
+               .AllWithYear(year)
                .ToList();
+
+            if (result.Count == 0)
+            {
+                // Partial matching, kept for releases carrying extra tokens around
+                // the title.
+                var partial = candidates.Where(x =>
+                    (x.MovieMetadata.Value.CleanTitle != null && cleanTitles.Any(t => t.Contains(x.MovieMetadata.Value.CleanTitle))) ||
+                    (x.MovieMetadata.Value.CleanOriginalTitle != null && cleanTitles.Any(t => t.Contains(x.MovieMetadata.Value.CleanOriginalTitle))))
+                   .ToList();
+
+                // Year disambiguates most substring collisions, since the colliding
+                // titles are usually releases from different years. Only applied
+                // when it doesn't eliminate every candidate.
+                var withYear = partial.AllWithYear(year).ToList();
+
+                if (withYear.Count > 0)
+                {
+                    partial = withYear;
+                }
+
+                // Several movie titles can be substrings of one release title; the
+                // longest is the most specific and is the one the release names.
+                if (partial.Count > 1)
+                {
+                    var longest = partial.Max(m => (m.MovieMetadata.Value.CleanTitle ?? string.Empty).Length);
+
+                    partial = partial
+                        .Where(m => (m.MovieMetadata.Value.CleanTitle ?? string.Empty).Length == longest)
+                        .ToList();
+                }
+
+                result = partial;
+            }
 
             if (result == null || result.Count == 0)
             {
