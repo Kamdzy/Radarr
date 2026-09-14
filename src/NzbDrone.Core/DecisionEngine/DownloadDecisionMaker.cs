@@ -132,7 +132,14 @@ namespace NzbDrone.Core.DecisionEngine
 
                             _logger.Trace("Custom Format Score of '{0}' [{1}] calculated for '{2}'", remoteMovie.CustomFormatScore, remoteMovie.CustomFormats?.ConcatToString(), report.Title);
 
-                            if (searchCriteria.SceneTitles.Any(title => report.Title.ContainsIgnoreCase(title) || report.Title.ContainsIgnoreCase(title.Replace("-", ""))))
+                            // SceneTitles is null on a search criteria that was never
+                            // populated with them, and the NullReferenceException that
+                            // caused was swallowed by the blanket catch below and
+                            // reported as "Unexpected error processing release". With no
+                            // scene title to corroborate the release, nothing can vouch
+                            // for it, which is the rejection the else branch already
+                            // describes.
+                            if (searchCriteria.SceneTitles?.Any(title => report.Title.ContainsIgnoreCase(title) || report.Title.ContainsIgnoreCase(title.Replace("-", ""))) == true)
                             {
                                 remoteMovie.DownloadAllowed = true;
                                 decision = new DownloadDecision(remoteMovie);

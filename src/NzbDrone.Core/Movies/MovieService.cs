@@ -170,7 +170,13 @@ namespace NzbDrone.Core.Movies
                         .ToList();
                 }
 
-                result = partial;
+                // Equally specific candidates the tiebreak cannot separate -- two
+                // movies sharing a clean title, say -- mean this branch has not
+                // identified anything. Reporting them as the result would both
+                // throw on the ambiguity and deny the alternative title and
+                // translation branches below their turn, when one of those may
+                // well name the movie unambiguously.
+                result = partial.Count == 1 ? partial : new List<Movie>();
             }
 
             if (result == null || result.Count == 0)

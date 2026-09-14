@@ -138,13 +138,20 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
             GivenSpecifications(_pass1, _pass2, _pass3);
             _reports[0].Title = "1937 - Snow White and the Seven Dwarves";
 
-            Subject.GetSearchDecision(_reports, new MovieSearchCriteria()).ToList();
+            var searchCriteria = new MovieSearchCriteria
+            {
+                Movie = new Movie { Title = "Snow White and the Seven Dwarves" },
+                SceneTitles = new List<string>()
+            };
 
-            Mocker.GetMock<IParsingService>().Verify(c => c.Map(It.IsAny<ParsedMovieInfo>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<SearchCriteriaBase>()), Times.Never());
+            var result = Subject.GetSearchDecision(_reports, searchCriteria).ToList();
 
-            _pass1.Verify(c => c.IsSatisfiedBy(It.IsAny<RemoteMovie>(), null), Times.Never());
-            _pass2.Verify(c => c.IsSatisfiedBy(It.IsAny<RemoteMovie>(), null), Times.Never());
-            _pass3.Verify(c => c.IsSatisfiedBy(It.IsAny<RemoteMovie>(), null), Times.Never());
+            // A search maps an unparsable report deliberately, so that the release
+            // title can be checked against the searched movie's scene titles. With
+            // no scene title vouching for this report it must come back rejected,
+            // which is what this test is named for -- it no longer asserts that the
+            // mapping and the specifications are skipped entirely.
+            result.Single().Approved.Should().BeFalse();
         }
 
         [Test]
