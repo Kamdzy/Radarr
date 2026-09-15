@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NUnit.Framework;
+using NzbDrone.Core.DecisionEngine;
 using NzbDrone.Core.DecisionEngine.Specifications;
 using NzbDrone.Core.Movies;
 using NzbDrone.Core.Parser.Model;
@@ -29,7 +30,7 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
         [TestCase("ABC-08", "Yet Another Release [PQRS-053] (Studio) [decen]")]
         public void should_reject_release_naming_a_different_catalogue_number(string movieTitle, string releaseTitle)
         {
-            Subject.IsSatisfiedBy(GivenRelease(movieTitle, releaseTitle), null).Accepted.Should().BeFalse();
+            Subject.IsSatisfiedBy(GivenRelease(movieTitle, releaseTitle), new ReleaseDecisionInformation()).Accepted.Should().BeFalse();
         }
 
         [Test]
@@ -38,14 +39,14 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
             // ABCD-424 vs EFGH-424: same serial, different prefix, different film.
             var remoteMovie = GivenRelease("ABCD-424", "A Release Title [EFGH-424] (Studio) [cen]");
 
-            Subject.IsSatisfiedBy(remoteMovie, null).Accepted.Should().BeFalse();
+            Subject.IsSatisfiedBy(remoteMovie, new ReleaseDecisionInformation()).Accepted.Should().BeFalse();
         }
 
         [TestCase("ABCD-410", "[HD/720p] ABCD-410 Some Release Title")]
         [TestCase("ABCD-770", "[HD/720p] ABCD-770 Another Release Title")]
         public void should_accept_release_naming_the_same_catalogue_number(string movieTitle, string releaseTitle)
         {
-            Subject.IsSatisfiedBy(GivenRelease(movieTitle, releaseTitle), null).Accepted.Should().BeTrue();
+            Subject.IsSatisfiedBy(GivenRelease(movieTitle, releaseTitle), new ReleaseDecisionInformation()).Accepted.Should().BeTrue();
         }
 
         [TestCase("ABC-08", "ABC-008 Some Title 1080p")]
@@ -54,7 +55,7 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
         [TestCase("ABC-209", "ABC 209 Another Title")]
         public void should_treat_padding_and_separators_as_the_same_number(string movieTitle, string releaseTitle)
         {
-            Subject.IsSatisfiedBy(GivenRelease(movieTitle, releaseTitle), null).Accepted.Should().BeTrue();
+            Subject.IsSatisfiedBy(GivenRelease(movieTitle, releaseTitle), new ReleaseDecisionInformation()).Accepted.Should().BeTrue();
         }
 
         [Test]
@@ -64,7 +65,7 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
             // the other specifications rather than guessing.
             var remoteMovie = GivenRelease("ABCD-410", "A Release Title With No Number 1080p");
 
-            Subject.IsSatisfiedBy(remoteMovie, null).Accepted.Should().BeTrue();
+            Subject.IsSatisfiedBy(remoteMovie, new ReleaseDecisionInformation()).Accepted.Should().BeTrue();
         }
 
         [Test]
@@ -72,7 +73,7 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
         {
             var remoteMovie = GivenRelease("ABCD-410", "ABCD-410 with ABCD-411 trailer attached");
 
-            Subject.IsSatisfiedBy(remoteMovie, null).Accepted.Should().BeTrue();
+            Subject.IsSatisfiedBy(remoteMovie, new ReleaseDecisionInformation()).Accepted.Should().BeTrue();
         }
 
         // Ordinary movie titles must not engage this specification at all, or a
@@ -85,7 +86,7 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
         [TestCase("Se7en", "Se7en.1995.REMASTERED.1080p.BluRay.MP3-320")]
         public void should_not_apply_to_movies_not_titled_by_catalogue_number(string movieTitle, string releaseTitle)
         {
-            Subject.IsSatisfiedBy(GivenRelease(movieTitle, releaseTitle), null).Accepted.Should().BeTrue();
+            Subject.IsSatisfiedBy(GivenRelease(movieTitle, releaseTitle), new ReleaseDecisionInformation()).Accepted.Should().BeTrue();
         }
 
         [Test]
@@ -97,7 +98,7 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
                 Release = new ReleaseInfo { Title = "Some Release [ABC-090]" }
             };
 
-            Subject.IsSatisfiedBy(remoteMovie, null).Accepted.Should().BeTrue();
+            Subject.IsSatisfiedBy(remoteMovie, new ReleaseDecisionInformation()).Accepted.Should().BeTrue();
         }
 
         [Test]
@@ -109,7 +110,7 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
                 Release = new ReleaseInfo()
             };
 
-            Subject.IsSatisfiedBy(remoteMovie, null).Accepted.Should().BeTrue();
+            Subject.IsSatisfiedBy(remoteMovie, new ReleaseDecisionInformation()).Accepted.Should().BeTrue();
         }
     }
 }

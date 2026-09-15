@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using NLog;
 using NzbDrone.Common.Extensions;
-using NzbDrone.Core.IndexerSearch.Definitions;
 using NzbDrone.Core.Parser.Model;
 
 namespace NzbDrone.Core.DecisionEngine.Specifications
@@ -32,7 +31,7 @@ namespace NzbDrone.Core.DecisionEngine.Specifications
         public SpecificationPriority Priority => SpecificationPriority.Default;
         public RejectionType Type => RejectionType.Permanent;
 
-        public DownloadSpecDecision IsSatisfiedBy(RemoteMovie subject, SearchCriteriaBase searchCriteria)
+        public DownloadSpecDecision IsSatisfiedBy(RemoteMovie subject, ReleaseDecisionInformation information)
         {
             // An indexer that echoes the queried tmdbid back onto every result it
             // returns makes ParsingService match all of them to the searched movie
