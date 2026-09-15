@@ -160,6 +160,46 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
         }
 
         [Test]
+        public void should_reject_unparsable_release_naming_a_different_catalogue_number()
+        {
+            // A sequel's release title contains the original's title in full, so
+            // the scene-title substring test vouches for it. The catalogue number
+            // it names is the one that gives it away.
+            GivenSpecifications(_pass1, _pass2, _pass3);
+            _reports[0].Title = "ABCD-092 Some Original Title 2";
+
+            var searchCriteria = new MovieSearchCriteria
+            {
+                Movie = new Movie { Title = "ABCD-074" },
+                SceneTitles = new List<string> { "ABCD-074", "Some Original Title" }
+            };
+
+            var result = Subject.GetSearchDecision(_reports, searchCriteria).ToList();
+
+            // Asserting the reason proves this went through the unparsable branch
+            // rather than being rejected by a specification on the parsed path.
+            result.Single().Approved.Should().BeFalse();
+            result.Single().Rejections.Select(r => r.Message).Should().Contain("Unable to parse release");
+        }
+
+        [Test]
+        public void should_accept_unparsable_release_naming_the_expected_catalogue_number()
+        {
+            GivenSpecifications(_pass1, _pass2, _pass3);
+            _reports[0].Title = "ABCD074";
+
+            var searchCriteria = new MovieSearchCriteria
+            {
+                Movie = new Movie { Title = "ABCD-074" },
+                SceneTitles = new List<string> { "ABCD-074" }
+            };
+
+            var result = Subject.GetSearchDecision(_reports, searchCriteria).ToList();
+
+            result.Single().Approved.Should().BeTrue();
+        }
+
+        [Test]
         public void should_not_attempt_to_make_decision_if_series_is_unknown()
         {
             GivenSpecifications(_pass1, _pass2, _pass3);

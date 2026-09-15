@@ -142,7 +142,30 @@ namespace NzbDrone.Core.DecisionEngine
                             // scene title to corroborate the release, nothing can vouch
                             // for it, which is the rejection the else branch already
                             // describes.
-                            if (searchCriteria.SceneTitles?.Any(title => report.Title.ContainsIgnoreCase(title) || report.Title.ContainsIgnoreCase(title.Replace("-", ""))) == true)
+                            var vouchedForByASceneTitle = searchCriteria.SceneTitles?.Any(title => report.Title.ContainsIgnoreCase(title) || report.Title.ContainsIgnoreCase(title.Replace("-", ""))) == true;
+
+                            // The test above is substring containment, so a sequel
+                            // vouches for the original: its release title is the
+                            // original's title plus a suffix. When the entry is
+                            // identified by a catalogue number, the release has to
+                            // name that same number to count.
+                            //
+                            // This cannot be left to CatalogueNumberSpecification.
+                            // The decision here is built directly and the
+                            // specification chain is never consulted, which is also
+                            // why it is not simply routed through
+                            // GetDecisionForReport: a release title that does not
+                            // parse yields Quality.Unknown, and the quality
+                            // specification rejects that, which would refuse the
+                            // very releases this branch exists to allow.
+                            if (vouchedForByASceneTitle && CatalogueNumber.Contradicts(searchCriteria.Movie?.Title, report.Title))
+                            {
+                                _logger.Debug("Release '{0}' matches a scene title of '{1}' but names a different catalogue number", report.Title, searchCriteria.Movie?.Title);
+
+                                vouchedForByASceneTitle = false;
+                            }
+
+                            if (vouchedForByASceneTitle)
                             {
                                 remoteMovie.DownloadAllowed = true;
                                 decision = new DownloadDecision(remoteMovie);
