@@ -6,6 +6,7 @@ using NLog;
 using NzbDrone.Common.EnvironmentInfo;
 using NzbDrone.Common.Extensions;
 using NzbDrone.Common.Instrumentation.Extensions;
+using NzbDrone.Core.DecisionEngine;
 using NzbDrone.Core.Download.TrackedDownloads;
 using NzbDrone.Core.History;
 using NzbDrone.Core.MediaFiles;
@@ -83,6 +84,18 @@ namespace NzbDrone.Core.Download
 
             if (!ValidatePath(trackedDownload))
             {
+                return;
+            }
+
+            // A release naming the catalogue number of the movie it was grabbed for
+            // is confirmed: it was checked for exactly that at grab time, whatever
+            // kind of match found it. Search by title only when that confirmation
+            // is missing, since the title search can land on another movie.
+            if (historyItem != null &&
+                CatalogueNumber.Names(_movieService.GetMovie(historyItem.MovieId)?.Title, trackedDownload.DownloadItem.Title))
+            {
+                trackedDownload.State = TrackedDownloadState.ImportPending;
+
                 return;
             }
 

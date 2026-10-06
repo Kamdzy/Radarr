@@ -63,5 +63,15 @@ namespace NzbDrone.Core.DecisionEngine
 
             return releaseNumbers.Count > 0 && !releaseNumbers.Overlaps(Parse(entryTitle));
         }
+
+        /// <summary>
+        /// True when the entry is identified by a catalogue number and the release
+        /// title names that same number -- the release positively claims to be the
+        /// entry. False whenever either side gives no catalogue number to compare.
+        /// </summary>
+        public static bool Names(string entryTitle, string releaseTitle)
+        {
+            return IdentifiesTitle(entryTitle) && Parse(releaseTitle).Overlaps(Parse(entryTitle));
+        }
     }
 }

@@ -178,6 +178,59 @@ namespace NzbDrone.Core.Test.Download.CompletedDownloadServiceTests
             AssertNotReadyToImport();
         }
 
+        private void GivenGrabbedByIdFor(string movieTitle, string releaseTitle)
+        {
+            _trackedDownload.DownloadItem.DownloadId = "5678";
+            _trackedDownload.DownloadItem.Title = releaseTitle;
+
+            Mocker.GetMock<IHistoryService>()
+                  .Setup(s => s.FindByDownloadId("5678"))
+                  .Returns(new List<MovieHistory>
+                  {
+                      new MovieHistory
+                      {
+                          MovieId = 5,
+                          SourceTitle = releaseTitle,
+                          EventType = MovieHistoryEventType.Grabbed,
+                          Data = new Dictionary<string, string> { { MovieHistory.MOVIE_MATCH_TYPE, MovieMatchType.Id.ToString() } }
+                      }
+                  });
+
+            Mocker.GetMock<IMovieService>()
+                  .Setup(s => s.GetMovie(5))
+                  .Returns(new Movie { Id = 5, Title = movieTitle });
+        }
+
+        [Test]
+        public void should_process_when_release_names_the_grabbed_movies_catalogue_number()
+        {
+            GivenGrabbedByIdFor("ABC-12", "ABC-012 Performer Name [FHD]");
+
+            // The title search finds nothing: the release writes the serial with
+            // a leading zero the movie title does not have.
+            Mocker.GetMock<IParsingService>()
+                  .Setup(s => s.GetMovie(It.IsAny<string>()))
+                  .Returns((Movie)null);
+
+            Subject.Check(_trackedDownload);
+
+            AssertReadyToImport();
+        }
+
+        [Test]
+        public void should_not_process_an_id_match_when_release_names_a_different_catalogue_number()
+        {
+            GivenGrabbedByIdFor("ABC-123", "XYZ-999 Performer Name");
+
+            Mocker.GetMock<IParsingService>()
+                  .Setup(s => s.GetMovie(It.IsAny<string>()))
+                  .Returns((Movie)null);
+
+            Subject.Check(_trackedDownload);
+
+            AssertNotReadyToImport();
+        }
+
         private void AssertNotReadyToImport()
         {
             _trackedDownload.State.Should().NotBe(TrackedDownloadState.ImportPending);

@@ -5,6 +5,7 @@ using NLog;
 using NzbDrone.Common.Cache;
 using NzbDrone.Common.Extensions;
 using NzbDrone.Core.CustomFormats;
+using NzbDrone.Core.DecisionEngine;
 using NzbDrone.Core.Download.Aggregation;
 using NzbDrone.Core.Download.History;
 using NzbDrone.Core.History;
@@ -135,8 +136,22 @@ namespace NzbDrone.Core.Download.TrackedDownloads
                 }
                 else
                 {
-                    // Fallback: find movie using title only to allow for automatic import
-                    var result = _parsingService.GetMovie(trackedDownload.DownloadItem.Title);
+                    // The movie it was grabbed for, when the release names that
+                    // movie's catalogue number. The title-only search below is a
+                    // substring match, and a movie whose title is one short word
+                    // can be found inside an unrelated release title and win over
+                    // the movie the release was actually grabbed for.
+                    var grabbed = _historyService.FindByDownloadId(downloadItem.DownloadId)
+                        .Where(h => h.EventType == MovieHistoryEventType.Grabbed)
+                        .MaxBy(h => h.Date);
+
+                    var result = grabbed == null ? null : _parsingService.Map(new ParsedMovieInfo(), grabbed.MovieId)?.Movie;
+
+                    if (!CatalogueNumber.Names(result?.Title, trackedDownload.DownloadItem.Title))
+                    {
+                        // Fallback: find movie using title only to allow for automatic import
+                        result = _parsingService.GetMovie(trackedDownload.DownloadItem.Title);
+                    }
 
                     if (result != null)
                     {

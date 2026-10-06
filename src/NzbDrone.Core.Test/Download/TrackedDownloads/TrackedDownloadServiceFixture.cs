@@ -41,6 +41,53 @@ namespace NzbDrone.Core.Test.Download.TrackedDownloads
                 });
         }
 
+        private DownloadClientItem GivenUnparsableGrab(string releaseTitle, Movie grabbedMovie)
+        {
+            Mocker.GetMock<IHistoryService>()
+                .Setup(s => s.FindByDownloadId("777"))
+                .Returns(new List<MovieHistory>
+                {
+                    new MovieHistory { DownloadId = "777", SourceTitle = releaseTitle, MovieId = grabbedMovie.Id, EventType = MovieHistoryEventType.Grabbed }
+                });
+
+            Mocker.GetMock<IParsingService>()
+                  .Setup(s => s.Map(It.IsAny<ParsedMovieInfo>(), grabbedMovie.Id))
+                  .Returns(new RemoteMovie { Movie = grabbedMovie });
+
+            // The title-only search finds an unrelated movie whose short title is
+            // a substring of the release title.
+            Mocker.GetMock<IParsingService>()
+                  .Setup(s => s.GetMovie(releaseTitle))
+                  .Returns(new Movie { Id = 9, Title = "Name" });
+
+            return new DownloadClientItem
+            {
+                Title = releaseTitle,
+                DownloadId = "777",
+                DownloadClientInfo = new DownloadClientItemClientInfo { Protocol = DownloadProtocol.Torrent, Id = 1 }
+            };
+        }
+
+        [Test]
+        public void should_track_an_unparsable_download_as_its_grabbed_movie_when_the_release_names_its_catalogue_number()
+        {
+            var item = GivenUnparsableGrab("ABC-012 Some Performer Name [FHD]", new Movie { Id = 5, Title = "ABC-12" });
+
+            var trackedDownload = Subject.TrackDownload(new DownloadClientDefinition { Id = 1, Protocol = DownloadProtocol.Torrent }, item);
+
+            trackedDownload.RemoteMovie.Movie.Id.Should().Be(5);
+        }
+
+        [Test]
+        public void should_fall_back_to_the_title_search_when_the_release_does_not_name_the_grabbed_movies_catalogue_number()
+        {
+            var item = GivenUnparsableGrab("XYZ-999 Some Performer Name", new Movie { Id = 5, Title = "ABC-12" });
+
+            var trackedDownload = Subject.TrackDownload(new DownloadClientDefinition { Id = 1, Protocol = DownloadProtocol.Torrent }, item);
+
+            trackedDownload.RemoteMovie.Movie.Id.Should().Be(9);
+        }
+
         [Test]
         public void should_track_downloads_using_the_source_title_if_it_cannot_be_found_using_the_download_title()
         {
