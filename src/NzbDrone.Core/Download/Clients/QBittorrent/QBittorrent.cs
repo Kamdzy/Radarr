@@ -10,6 +10,7 @@ using NzbDrone.Common.Extensions;
 using NzbDrone.Common.Http;
 using NzbDrone.Core.Blocklisting;
 using NzbDrone.Core.Configuration;
+using NzbDrone.Core.Exceptions;
 using NzbDrone.Core.Localization;
 using NzbDrone.Core.MediaFiles.TorrentInfo;
 using NzbDrone.Core.Parser.Model;
@@ -81,7 +82,14 @@ namespace NzbDrone.Core.Download.Clients.QBittorrent
             var moveToTop = (isRecentMovie && Settings.RecentMoviePriority == (int)QBittorrentPriority.First) || (!isRecentMovie && Settings.OlderMoviePriority == (int)QBittorrentPriority.First);
             var forceStart = (QBittorrentState)Settings.InitialState == QBittorrentState.ForceStart;
 
-            Proxy.AddTorrentFromUrl(magnetLink, addHasSetShareLimits && setShareLimits ? remoteMovie.SeedConfiguration : null, Settings);
+            try
+            {
+                Proxy.AddTorrentFromUrl(magnetLink, addHasSetShareLimits && setShareLimits ? remoteMovie.SeedConfiguration : null, Settings);
+            }
+            catch (DownloadClientException ex) when (ex.InnerException is HttpException httpException && httpException.Response.StatusCode is HttpStatusCode.Conflict)
+            {
+                throw new DownloadClientRejectedReleaseException(remoteMovie.Release, "QBittorrent rejected the magnet link due to a conflict", ex);
+            }
 
             if ((!addHasSetShareLimits && setShareLimits) || moveToTop || forceStart)
             {
@@ -138,7 +146,14 @@ namespace NzbDrone.Core.Download.Clients.QBittorrent
             var moveToTop = (isRecentMovie && Settings.RecentMoviePriority == (int)QBittorrentPriority.First) || (!isRecentMovie && Settings.OlderMoviePriority == (int)QBittorrentPriority.First);
             var forceStart = (QBittorrentState)Settings.InitialState == QBittorrentState.ForceStart;
 
-            Proxy.AddTorrentFromFile(filename, fileContent, addHasSetShareLimits ? remoteMovie.SeedConfiguration : null, Settings);
+            try
+            {
+                Proxy.AddTorrentFromFile(filename, fileContent, addHasSetShareLimits ? remoteMovie.SeedConfiguration : null, Settings);
+            }
+            catch (DownloadClientException ex) when (ex.InnerException is HttpException httpException && httpException.Response.StatusCode is HttpStatusCode.Conflict)
+            {
+                throw new DownloadClientRejectedReleaseException(remoteMovie.Release, "QBittorrent rejected the torrent file due to a conflict", ex);
+            }
 
             if ((!addHasSetShareLimits && setShareLimits) || moveToTop || forceStart)
             {
@@ -313,7 +328,20 @@ namespace NzbDrone.Core.Download.Clients.QBittorrent
 
                 if (version >= new Version("2.6.1") && item.Status == DownloadItemStatus.Completed)
                 {
-                    if (torrent.ContentPath != torrent.SavePath)
+                    // root_path arrived in qBittorrent 5.0 (API 2.11.2). It is the torrent's top folder,
+                    // or empty when the torrent has no root folder. "Don't create subfolder" strips that
+                    // folder, so root_path stays empty. Prefer it when set: a single-file torrent that
+                    // qBittorrent wrapped in a subfolder has content_path pointing at the file (often a
+                    // .rar) and root_path pointing at the folder an external unpacker extracts into.
+                    var useRootPath = version >= new Version(2, 11, 2) &&
+                                      torrent.RootPath.IsNotNullOrWhiteSpace() &&
+                                      torrent.RootPath != torrent.SavePath;
+
+                    if (useRootPath)
+                    {
+                        item.OutputPath = _remotePathMappingService.RemapRemoteToLocal(Settings.Host, new OsPath(torrent.RootPath));
+                    }
+                    else if (torrent.ContentPath != torrent.SavePath)
                     {
                         item.OutputPath = _remotePathMappingService.RemapRemoteToLocal(Settings.Host, new OsPath(torrent.ContentPath));
                     }

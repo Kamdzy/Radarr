@@ -972,8 +972,6 @@
     "DownloadClients": "Клієнти завантаження",
     "DownloadClientSettings": "Налаштування клієнта завантаження",
     "DownloadClientsSettingsSummary": "Клієнти завантаження, обробка завантажень і віддалені відображення шляхів",
-    "DownloadClientStatusCheckAllClientMessage": "Усі клієнти завантаження недоступні через збої",
-    "DownloadClientStatusCheckSingleClientMessage": "Завантаження клієнтів недоступне через помилки: {downloadClientNames}",
     "Genres": "Жанри",
     "Global": "Глобальний",
     "MovieDetailsGoTo": "Перейти до {0}",
@@ -1317,7 +1315,6 @@
     "IndexerHDBitsSettingsMediums": "Носії",
     "IndexerSettingsApiUrl": "API URL",
     "IndexerSettingsCategories": "Категорії",
-    "DownloadClientSortingCheckMessage": "Клієнт завантаження {downloadClientName} має увімкнене сортування за режимом {sortingMode} для категорії {appName}. Вам слід вимкнути сортування у вашому клієнті завантаження, щоб уникнути проблем з імпортом.",
     "ImportListsTraktSettingsPopularListTypeRecommendedMoviesByYear": "Рекомендовані фільми за рік",
     "ImportListsTraktSettingsGenresMovieHelpText": "Фільтрувати фільми за жанром Trakt (через кому) Тільки для популярних списків",
     "ImportListsTraktSettingsLimitMovieHelpText": "Обмежити кількість фільмів для отримання",
@@ -1349,7 +1346,6 @@
     "InvalidMovieInfoLanguageLanguage": "Мова інформації про фільм встановлена на недійсне значення, виправте її та збережіть налаштування",
     "ListRefreshInterval": "Інтервал оновлення списку",
     "Loading": "Завантаження",
-    "MetadataKometaDeprecated": "Kometa файли більше не будуть створюватися, підтримка буде повністю вимкнена у 6-й версії",
     "MetadataSettingsMovieImages": "Зображення фільму",
     "MetadataSettingsMovieMetadataLanguage": "Мова метаданих фільму",
     "MetadataSettingsMovieMetadataNfo": "Використовувати movie.nfo",
@@ -1585,7 +1581,6 @@
     "LanguagesLoadError": "Не вдається завантажити мови",
     "ListWillRefreshEveryInterval": "Список буде оновлюватися кожні {refreshInterval}",
     "Menu": "Меню",
-    "MetadataKometaDeprecatedSetting": "Застарілі",
     "MissingLoadError": "Помилка завантаження відсутніх елементів",
     "NotificationsCustomScriptSettingsArguments": "Аргументи",
     "NotificationsCustomScriptSettingsName": "Власний скрипт",
@@ -2047,5 +2042,8 @@
     "ImportListsSimklSettingsUserListTypeDropped": "Втрачено",
     "ImportListsSimklSettingsUserListTypeHold": "Утримано",
     "ImportListsSimklSettingsUserListTypePlanToWatch": "Планую подивитися",
-    "ImportListsSimklSettingsUserListTypeWatching": "Дивлюся"
+    "ImportListsSimklSettingsUserListTypeWatching": "Дивлюся",
+    "SslKeyPath": "Шлях до SSL-ключа",
+    "SslKeyPathHelpText": "Шлях до файлу ключа, що використовується з pem-файлом",
+    "NotificationsNtfySettingsHeaders": "Заголовки"
 }

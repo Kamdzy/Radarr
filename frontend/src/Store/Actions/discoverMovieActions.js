@@ -35,8 +35,8 @@ export const defaultState = {
   isAdded: false,
   addError: null,
   items: [],
-  sortKey: 'sortTitle',
-  sortDirection: sortDirections.ASCENDING,
+  sortKey: 'popularity',
+  sortDirection: sortDirections.DESCENDING,
   secondarySortKey: 'sortTitle',
   secondarySortDirection: sortDirections.ASCENDING,
   view: 'overview',
@@ -72,6 +72,7 @@ export const defaultState = {
     showGenres: true,
     showTmdbRating: false,
     showImdbRating: false,
+    showRottenTomatoesRating: false,
     showCertification: true
   },
 

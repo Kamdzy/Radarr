@@ -117,6 +117,7 @@ namespace NzbDrone.Core.Notifications.Ntfy
                 requestBuilder.AddQueryParam("title", title);
                 requestBuilder.AddQueryParam("message", message);
                 requestBuilder.AddQueryParam("priority", settings.Priority.ToString());
+                requestBuilder.AddQueryParam("icon", "https://raw.githubusercontent.com/Radarr/Radarr/develop/Logo/256.png");
 
                 if (settings.Tags.Any())
                 {
@@ -135,6 +136,11 @@ namespace NzbDrone.Core.Notifications.Ntfy
                 else if (!settings.UserName.IsNullOrWhiteSpace() && !settings.Password.IsNullOrWhiteSpace())
                 {
                     requestBuilder.NetworkCredential = new BasicNetworkCredential(settings.UserName, settings.Password);
+                }
+
+                foreach (var header in settings.Headers)
+                {
+                    requestBuilder.Headers.Add(header.Key, header.Value);
                 }
 
                 var request = requestBuilder.Build();
