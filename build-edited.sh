@@ -143,9 +143,9 @@ PackageLinux()
 
     echo "Adding Radarr.Mono to UpdatePackage"
     cp $folder/Radarr.Mono.* $folder/Radarr.Update
-    if [ "$framework" = "net8.0" ]; then
-        cp $folder/Mono.Posix.NETStandard.* $folder/Radarr.Update
-        cp $folder/libMonoPosixHelper.* $folder/Radarr.Update
+    if [ "$framework" = "net10.0" ]; then
+        cp $folder/Openur.Mono.Unix.* $folder/Radarr.Update
+        cp $folder/libMono.Unix.* $folder/Radarr.Update
     fi
 
     ProgressEnd "Creating $runtime Package for $framework"
@@ -171,9 +171,9 @@ PackageMacOS()
 
     echo "Adding Radarr.Mono to UpdatePackage"
     cp $folder/Radarr.Mono.* $folder/Radarr.Update
-    if [ "$framework" = "net8.0" ]; then
-        cp $folder/Mono.Posix.NETStandard.* $folder/Radarr.Update
-        cp $folder/libMonoPosixHelper.* $folder/Radarr.Update
+    if [ "$framework" = "net10.0" ]; then
+        cp $folder/Openur.Mono.Unix.* $folder/Radarr.Update
+        cp $folder/libMono.Unix.* $folder/Radarr.Update
     fi
 
     ProgressEnd 'Creating MacOS Package'
@@ -216,8 +216,8 @@ PackageWindows()
 
     echo "Removing Radarr.Mono"
     rm -f $folder/Radarr.Mono.*
-    rm -f $folder/Mono.Posix.NETStandard.*
-    rm -f $folder/libMonoPosixHelper.*
+    rm -f $folder/Openur.Mono.Unix.*
+    rm -f $folder/libMono.Unix.*
 
     echo "Adding Radarr.Windows to UpdatePackage"
     cp $folder/Radarr.Windows.* $folder/Radarr.Update
@@ -383,14 +383,14 @@ then
     Build
     if [[ -z "$RID" || -z "$FRAMEWORK" ]];
     then
-        PackageTests "net8.0" "win-x64"
-        PackageTests "net8.0" "win-x86"
-        PackageTests "net8.0" "linux-x64"
-        PackageTests "net8.0" "linux-musl-x64"
-        PackageTests "net8.0" "osx-x64"
+        PackageTests "$framework" "win-x64"
+        PackageTests "$framework" "win-x86"
+        PackageTests "$framework" "linux-x64"
+        PackageTests "$framework" "linux-musl-x64"
+        PackageTests "$framework" "osx-x64"
         if [ "$ENABLE_EXTRA_PLATFORMS" = "YES" ];
         then
-            PackageTests "net8.0" "freebsd-x64"
+            PackageTests "$framework" "freebsd-x64"
         fi
     else
         PackageTests "$FRAMEWORK" "$RID"
@@ -418,19 +418,19 @@ then
 
     if [[ -z "$RID" || -z "$FRAMEWORK" ]];
     then
-        Package "net8.0" "win-x64"
-        Package "net8.0" "win-x86"
-        Package "net8.0" "linux-x64"
-        Package "net8.0" "linux-musl-x64"
-        Package "net8.0" "linux-arm64"
-        Package "net8.0" "linux-musl-arm64"
-        Package "net8.0" "linux-arm"
-        Package "net8.0" "linux-musl-arm"
-        Package "net8.0" "osx-x64"
-        Package "net8.0" "osx-arm64"
+        Package "$framework" "win-x64"
+        Package "$framework" "win-x86"
+        Package "$framework" "linux-x64"
+        Package "$framework" "linux-musl-x64"
+        Package "$framework" "linux-arm64"
+        Package "$framework" "linux-musl-arm64"
+        Package "$framework" "linux-arm"
+        Package "$framework" "linux-musl-arm"
+        Package "$framework" "osx-x64"
+        Package "$framework" "osx-arm64"
         if [ "$ENABLE_EXTRA_PLATFORMS" = "YES" ];
         then
-            Package "net8.0" "freebsd-x64"
+            Package "$framework" "freebsd-x64"
         fi
     else
         Package "$FRAMEWORK" "$RID"

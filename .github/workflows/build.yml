@@ -54,13 +54,11 @@ jobs:
           echo "framework=$FRAMEWORK" >> "$GITHUB_OUTPUT"
           echo "major_version=${VERSION%%.*}" >> "$GITHUB_OUTPUT"
           echo "version=$RADARR_VERSION" >> "$GITHUB_OUTPUT"
-      - name: Enable Extra Platforms In SDK
-        shell: bash
-        run: ./build-edited.sh --enable-extra-platforms-in-sdk
-
+      # No FreeBSD build: upstream moved the freebsd-x64 runtime packs to an
+      # authenticated GitHub Packages feed (gh-openur) this fork has no credentials for.
       - name: Build Backend
         shell: bash
-        run: ./build-edited.sh --backend --enable-extra-platforms --packages
+        run: ./build-edited.sh --backend --packages
 
       # Test Artifacts
 
