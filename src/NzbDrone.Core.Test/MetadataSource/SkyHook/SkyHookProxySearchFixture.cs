@@ -9,6 +9,7 @@ namespace NzbDrone.Core.Test.MetadataSource.SkyHook
 {
     [TestFixture]
     [IntegrationTest]
+    [Ignore("This fork's metadata server does not serve TMDB data")]
     public class SkyHookProxySearchFixture : CoreTest<SkyHookProxy>
     {
         [SetUp]
